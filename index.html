@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEURAL::EYE v3.0 - Gesture Control Interface</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { cursor: none; }
+        body {
+            font-family: 'Fira Code', monospace;
+            background: #0a0a0f;
+            overflow: hidden;
+        }
+        .orbitron { font-family: 'Orbitron', sans-serif; }
+        
+        /* Matrix Rain */
+        .matrix-rain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        /* Scanlines */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 255, 0, 0.03) 2px,
+                rgba(0, 255, 0, 0.03) 4px
+            );
+            pointer-events: none;
+            z-index: 100;
+        }
+        
+        /* Eye Tracker */
+        .eye-tracker {
+            position: fixed;
+            width: 80px;
+            height: 80px;
+            border: 3px solid #00ff88;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 50;
+            box-shadow: 0 0 30px #00ff88, inset 0 0 30px rgba(0, 255, 136, 0.3);
+            transition: transform 0.1s ease-out;
+        }
+        .eye-tracker::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            background: #00ff88;
+            border-radius: 50%;
+            box-shadow: 0 0 20px #00ff88;
+        }
+        .eye-tracker::after {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            border: 1px solid rgba(0, 255, 136, 0.5);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.5; }
+        }
+        
+        /* Gaze Zones */
+        .gaze-zone {
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        .gaze-zone.active {
+            border-color: #00ff88;
+            box-shadow: 0 0 40px rgba(0, 255, 136, 0.5), inset 0 0 40px rgba(0, 255, 136, 0.1);
+        }
+        .gaze-zone.active .zone-icon {
+            animation: iconPulse 0.5s ease infinite;
+        }
+        
+        @keyframes iconPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+        
+        /* Terminal */
+        .terminal {
+            background: rgba(0, 10, 5, 0.9);
+            border: 1px solid #00ff88;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+        .terminal-text {
+            color: #00ff88;
+            text-shadow: 0 0 10px #00ff88;
+        }
+        
+        /* Glitch Effect */
+        .glitch {
+            animation: glitch 3s infinite;
+        }
+        @keyframes glitch {
+            0%, 90%, 100% { transform: translate(0); }
+            92% { transform: translate(-2px, 2px); }
+            94% { transform: translate(2px, -2px); }
+            96% { transform: translate(-2px, -2px); }
+            98% { transform: translate(2px, 2px); }
+        }
+        
+        /* Neon Text */
+        .neon-green {
+            color: #00ff88;
+            text-shadow: 0 0 10px #00ff88, 0 0 20px #00ff88, 0 0 40px #00ff88;
+        }
+        .neon-cyan {
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff;
+        }
+        .neon-purple {
+            color: #ff00ff;
+            text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff;
+        }
+        
+        /* Circuit Pattern */
+        .circuit-bg {
+            background-image: 
+                linear-gradient(90deg, rgba(0, 255, 136, 0.1) 1px, transparent 1px),
+                linear-gradient(rgba(0, 255, 136, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+        
+        /* Progress Bar */
+        .cyber-progress {
+            background: linear-gradient(90deg, #00ff88, #00ffff, #ff00ff);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+        }
+        
+        /* Floating Code */
+        .floating-code {
+            position: absolute;
+            font-size: 10px;
+            color: rgba(0, 255, 136, 0.3);
+            animation: float 10s linear infinite;
+            pointer-events: none;
+        }
+        @keyframes float {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
+        }
+        
+        /* Data Stream */
+        .data-stream {
+            background: linear-gradient(180deg, transparent, #00ff88, transparent);
+            animation: stream 2s linear infinite;
+        }
+        @keyframes stream {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-black text-green-400 circuit-bg">
+    <!-- Scanlines Overlay -->
+    <div class="scanlines"></div>
+    
+    <!-- Matrix Rain Canvas -->
+    <canvas class="matrix-rain" id="matrixCanvas"></canvas>
+    
+    <!-- Eye Tracker Cursor -->
+    <div class="eye-tracker" id="eyeTracker"></div>
+    
+    <!-- Main Interface -->
+    <div class="relative z-10 min-h-screen p-6">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-8">
+            <div class="glitch">
+                <h1 class="orbitron text-3xl font-black neon-green">NEURAL::EYE v3.0</h1>
+                <p class="text-xs text-green-600 mt-1">[ GESTURE CONTROL INTERFACE ACTIVE ]</p>
+            </div>
+            <div class="flex items-center gap-6">
+                <div class="text-right">
+                    <div class="text-xs text-green-600">SYSTEM STATUS</div>
+                    <div class="neon-cyan text-sm" id="systemStatus">INITIALIZING...</div>
+                </div>
+                <div class="text-right">
+                    <div class="text-xs text-green-600">GAZE ACCURACY</div>
+                    <div class="neon-purple text-sm" id="gazeAccuracy">98.7%</div>
+                </div>
+                <div class="text-right">
+                    <div class="text-xs text-green-600">NEURAL SYNC</div>
+                    <div class="neon-green text-sm" id="neuralSync">CONNECTED</div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Eye Tracking Visualization -->
+        <div class="flex gap-6 mb-6">
+            <!-- Left Eye -->
+            <div class="flex-1 terminal rounded-lg p-4">
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
+                    <span class="text-xs terminal-text">LEFT_EYE_TRACK</span>
+                </div>
+                <div class="relative h-32 border border-green-900 rounded bg-black/50 overflow-hidden">
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <svg width="100" height="100" viewBox="0 0 100 100" id="leftEyeSvg">
+                            <ellipse cx="50" cy="50" rx="45" ry="35" fill="none" stroke="#00ff88" stroke-width="2"/>
+                            <circle cx="50" cy="50" r="20" fill="#001a0d" stroke="#00ff88" stroke-width="2" id="leftIris"/>
+                            <circle cx="50" cy="50" r="8" fill="#00ff88" id="leftPupil"/>
+                        </svg>
+                    </div>
+                    <div class="absolute bottom-2 left-2 text-xs text-green-600">
+                        X: <span id="leftEyeX">0.00</span> Y: <span id="leftEyeY">0.00</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Center Status -->
+            <div class="w-64 terminal rounded-lg p-4">
+                <div class="text-center mb-4">
+                    <div class="orbitron text-lg neon-green">GAZE TARGET</div>
+                </div>
+                <div class="relative h-32 border border-green-900 rounded bg-black/50">
+                    <div class="absolute inset-0" id="gazeTarget">
+                        <div class="absolute w-4 h-4 border-2 border-cyan-400 rounded-full transition-all duration-100" id="gazePoint"></div>
+                    </div>
+                    <div class="absolute inset-0 flex items-center justify-center opacity-20">
+                        <div class="w-16 h-px bg-green-500"></div>
+                        <div class="absolute w-px h-16 bg-green-500"></div>
+                    </div>
+                </div>
+                <div class="mt-3 text-center">
+                    <div class="text-xs text-green-600">ACTIVE ZONE</div>
+                    <div class="neon-cyan text-sm" id="activeZone">SCANNING...</div>
+                </div>
+            </div>
+            
+            <!-- Right Eye -->
+            <div class="flex-1 terminal rounded-lg p-4">
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
+                    <span class="text-xs terminal-text">RIGHT_EYE_TRACK</span>
+                </div>
+                <div class="relative h-32 border border-green-900 rounded bg-black/50 overflow-hidden">
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <svg width="100" height="100" viewBox="0 0 100 100" id="rightEyeSvg">
+                            <ellipse cx="50" cy="50" rx="45" ry="35" fill="none" stroke="#00ff88" stroke-width="2"/>
+                            <circle cx="50" cy="50" r="20" fill="#001a0d" stroke="#00ff88" stroke-width="2" id="rightIris"/>
+                            <circle cx="50" cy="50" r="8" fill="#00ff88" id="rightPupil"/>
+                        </svg>
+                    </div>
+                    <div class="absolute bottom-2 left-2 text-xs text-green-600">
+                        X: <span id="rightEyeX">0.00</span> Y: <span id="rightEyeY">0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Gaze Control Zones -->
+        <div class="grid grid-cols-4 gap-4 mb-6">
+            <!-- Zone 1: Decrypt -->
+            <div class="gaze-zone terminal rounded-lg p-4 text-center" data-zone="DECRYPT" data-action="decrypt">
+                <div class="zone-icon text-4xl mb-2">🔓</div>
+                <div class="orbitron text-sm neon-green">DECRYPT</div>
+                <div class="text-xs text-green-600 mt-1">Gaze to activate</div>
+                <div class="mt-3 h-1 bg-green-900 rounded overflow-hidden">
+                    <div class="h-full cyber-progress transition-all duration-300" style="width: 0%" id="decryptProgress"></div>
+                </div>
+            </div>
+            
+            <!-- Zone 2: Scan -->
+            <div class="gaze-zone terminal rounded-lg p-4 text-center" data-zone="SCAN" data-action="scan">
+                <div class="zone-icon text-4xl mb-2">📡</div>
+                <div class="orbitron text-sm neon-cyan">SCAN</div>
+                <div class="text-xs text-green-600 mt-1">Gaze to activate</div>
+                <div class="mt-3 h-1 bg-green-900 rounded overflow-hidden">
+                    <div class="h-full cyber-progress transition-all duration-300" style="width: 0%" id="scanProgress"></div>
+                </div>
+            </div>
+            
+            <!-- Zone 3: Inject -->
+            <div class="gaze-zone terminal rounded-lg p-4 text-center" data-zone="INJECT" data-action="inject">
+                <div class="zone-icon text-4xl mb-2">💉</div>
+                <div class="orbitron text-sm neon-purple">INJECT</div>
+                <div class="text-xs text-green-600 mt-1">Gaze to activate</div>
+                <div class="mt-3 h-1 bg-green-900 rounded overflow-hidden">
+                    <div class="h-full cyber-progress transition-all duration-300" style="width: 0%" id="injectProgress"></div>
+                </div>
+            </div>
+            
+            <!-- Zone 4: Execute -->
+            <div class="gaze-zone terminal rounded-lg p-4 text-center" data-zone="EXECUTE" data-action="execute">
+                <div class="zone-icon text-4xl mb-2">⚡</div>
+                <div class="orbitron text-sm neon-green">EXECUTE</div>
+                <div class="text-xs text-green-600 mt-1">Gaze to activate</div>
+                <div class="mt-3 h-1 bg-green-900 rounded overflow-hidden">
+                    <div class="h-full cyber-progress transition-all duration-300" style="width: 0%" id="executeProgress"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Terminal Output & Code Stream -->
+        <div class="grid grid-cols-3 gap-4">
+            <!-- Terminal -->
+            <div class="col-span-2 terminal rounded-lg p-4">
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                    <span class="text-xs terminal-text ml-2">SYSTEM_TERMINAL</span>
+                </div>
+                <div class="h-48 overflow-hidden bg-black/50 rounded p-3 font-mono text-xs" id="terminalOutput">
+                    <div class="terminal-text">> NEURAL::EYE v3.0 initialized...</div>
+                    <div class="terminal-text">> Loading gesture recognition modules...</div>
+                    <div class="terminal-text">> Eye tracking calibration complete</div>
+                    <div class="terminal-text">> <span class="neon-cyan">STATUS:</span> Awaiting gaze commands...</div>
+                    <div class="terminal-text blink-cursor">_</div>
+                </div>
+            </div>
+            
+            <!-- Code Stream -->
+            <div class="terminal rounded-lg p-4">
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
+                    <span class="text-xs terminal-text">DATA_STREAM</span>
+                </div>
+                <div class="h-48 overflow-hidden bg-black/50 rounded p-3 font-mono text-xs relative" id="codeStream">
+                    <!-- Code will be injected here -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Bottom Stats -->
+        <div class="mt-6 flex justify-between items-center text-xs text-green-600">
+            <div class="flex gap-6">
+                <span>PACKETS: <span class="neon-green" id="packetCount">0</span></span>
+                <span>ENCRYPTION: <span class="neon-cyan">AES-256</span></span>
+                <span>PROTOCOL: <span class="neon-purple">QUANTUM-SAFE</span></span>
+            </div>
+            <div class="flex gap-6">
+                <span>LATENCY: <span class="neon-green" id="latency">12ms</span></span>
+                <span>UPTIME: <span class="neon-cyan" id="uptime">00:00:00</span></span>
+                <span>NODE: <span class="neon-purple">DARKNET-07</span></span>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Matrix Rain Effect
+        const canvas = document.getElementById('matrixCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*(){}[]|;:<>?アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+        const charArray = chars.split('');
+        const fontSize = 14;
+        const columns = canvas.width / fontSize;
+        const drops = [];
+        
+        for (let i = 0; i < columns; i++) {
+            drops[i] = Math.random() * -100;
+        }
+        
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#00ff88';
+            ctx.font = fontSize + 'px monospace';
+            
+            for (let i = 0; i < drops.length; i++) {
+                const char = charArray[Math.floor(Math.random() * charArray.length)];
+                ctx.fillStyle = Math.random() > 0.98 ? '#ffffff' : '#00ff88';
+                ctx.globalAlpha = Math.random() * 0.5 + 0.1;
+                ctx.fillText(char, i * fontSize, drops[i] * fontSize);
+                ctx.globalAlpha = 1;
+                
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+        }
+        
+        setInterval(drawMatrix, 50);
+        
+        // Eye Tracker
+        const eyeTracker = document.getElementById('eyeTracker');
+        let mouseX = window.innerWidth / 2;
+        let mouseY = window.innerHeight / 2;
+        
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            
+            eyeTracker.style.left = (mouseX - 40) + 'px';
+            eyeTracker.style.top = (mouseY - 40) + 'px';
+            
+            updateEyes(e.clientX, e.clientY);
+            updateGazeTarget(e.clientX, e.clientY);
+            checkGazeZones(e.clientX, e.clientY);
+        });
+        
+        // Eye Movement
+        function updateEyes(x, y) {
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+            
+            const deltaX = (x - centerX) / centerX * 15;
+            const deltaY = (y - centerY) / centerY * 10;
+            
+            // Left Eye
+            document.getElementById('leftIris').setAttribute('cx', 50 + deltaX);
+            document.getElementById('leftIris').setAttribute('cy', 50 + deltaY);
+            document.getElementById('leftPupil').setAttribute('cx', 50 + deltaX);
+            document.getElementById('leftPupil').setAttribute('cy', 50 + deltaY);
+            document.getElementById('leftEyeX').textContent = (deltaX / 15).toFixed(2);
+            document.getElementById('leftEyeY').textContent = (deltaY / 10).toFixed(2);
+            
+            // Right Eye
+            document.getElementById('rightIris').setAttribute('cx', 50 + deltaX);
+            document.getElementById('rightIris').setAttribute('cy', 50 + deltaY);
+            document.getElementById('rightPupil').setAttribute('cx', 50 + deltaX);
+            document.getElementById('rightPupil').setAttribute('cy', 50 + deltaY);
+            document.getElementById('rightEyeX').textContent = (deltaX / 15).toFixed(2);
+            document.getElementById('rightEyeY').textContent = (deltaY / 10).toFixed(2);
+        }
+        
+        // Gaze Target
+        function updateGazeTarget(x, y) {
+            const target = document.getElementById('gazeTarget');
+            const point = document.getElementById('gazePoint');
+            const rect = target.getBoundingClientRect();
+            
+            const relX = ((x / window.innerWidth) * rect.width) - 8;
+            const relY = ((y / window.innerHeight) * rect.height) - 8;
+            
+            point.style.left = Math.max(0, Math.min(relX, rect.width - 16)) + 'px';
+            point.style.top = Math.max(0, Math.min(relY, rect.height - 16)) + 'px';
+        }
+        
+        // Gaze Zones
+        const zones = document.querySelectorAll('.gaze-zone');
+        let activeZone = null;
+        let gazeTimer = null;
+        let gazeProgress = 0;
+        
+        function checkGazeZones(x, y) {
+            let foundZone = null;
+            
+            zones.forEach(zone => {
+                const rect = zone.getBoundingClientRect();
+                if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+                    foundZone = zone;
+                    zone.classList.add('active');
+                } else {
+                    zone.classList.remove('active');
+                }
+            });
+            
+            if (foundZone !== activeZone) {
+                if (activeZone) {
+                    const progressBar = document.getElementById(activeZone.dataset.action + 'Progress');
+                    if (progressBar) progressBar.style.width = '0%';
+                }
+                gazeProgress = 0;
+                activeZone = foundZone;
+            }
+            
+            if (activeZone) {
+                document.getElementById('activeZone').textContent = activeZone.dataset.zone;
+                gazeProgress = Math.min(100, gazeProgress + 2);
+                const progressBar = document.getElementById(activeZone.dataset.action + 'Progress');
+                if (progressBar) progressBar.style.width = gazeProgress + '%';
+                
+                if (gazeProgress >= 100) {
+                    executeAction(activeZone.dataset.action);
+                    gazeProgress = 0;
+                }
+            } else {
+                document.getElementById('activeZone').textContent = 'SCANNING...';
+            }
+        }
+        
+        // Execute Actions
+        function executeAction(action) {
+            const messages = {
+                decrypt: [
+                    '> Initiating quantum decryption sequence...',
+                    '> Bypassing firewall layer 7...',
+                    '> <span class="neon-green">SUCCESS:</span> Data decrypted successfully!'
+                ],
+                scan: [
+                    '> Scanning network topology...',
+                    '> Discovered 47 active nodes...',
+                    '> <span class="neon-cyan">COMPLETE:</span> Network map updated!'
+                ],
+                inject: [
+                    '> Preparing payload injection...',
+                    '> Injecting neural override code...',
+                    '> <span class="neon-purple">INJECTED:</span> Backdoor established!'
+                ],
+                execute: [
+                    '> Compiling execution matrix...',
+                    '> Running subroutine alpha-7...',
+                    '> <span class="neon-green">EXECUTED:</span> Operation complete!'
+                ]
+            };
+            
+            const terminal = document.getElementById('terminalOutput');
+            messages[action].forEach((msg, i) => {
+                setTimeout(() => {
+                    const div = document.createElement('div');
+                    div.className = 'terminal-text';
+                    div.innerHTML = msg;
+                    terminal.insertBefore(div, terminal.lastElementChild);
+                    terminal.scrollTop = terminal.scrollHeight;
+                }, i * 500);
+            });
+        }
+        
+        // Code Stream
+        const codeSnippets = [
+            'const decrypt = async (data) => {',
+            '  return await quantum.decode(data);',
+            '};',
+            'function scanNetwork(range) {',
+            '  const nodes = [];',
+            '  for (let i = 0; i < 255; i++) {',
+            '    nodes.push(ping(range + i));',
+            '  }',
+            '  return nodes;',
+            '}',
+            'class NeuralInterface {',
+            '  constructor(eyeTracker) {',
+            '    this.tracker = eyeTracker;',
+            '    this.calibrate();',
+            '  }',
+            '}',
+            'while (true) {',
+            '  await processGaze();',
+            '  updateDisplay();',
+            '}'
+        ];
+        
+        let codeIndex = 0;
+        const codeStream = document.getElementById('codeStream');
+        
+        function addCodeLine() {
+            const div = document.createElement('div');
+            div.className = 'terminal-text';
+            div.style.opacity = '0';
+            div.style.transition = 'opacity 0.3s';
+            div.textContent = codeSnippets[codeIndex % codeSnippets.length];
+            codeStream.appendChild(div);
+            
+            setTimeout(() => div.style.opacity = '1', 50);
+            
+            if (codeStream.children.length > 15) {
+                codeStream.removeChild(codeStream.firstChild);
+            }
+            
+            codeIndex++;
+        }
+        
+        setInterval(addCodeLine, 800);
+        
+        // Stats Updates
+        let packets = 0;
+        let startTime = Date.now();
+        
+        function updateStats() {
+            packets += Math.floor(Math.random() * 100);
+            document.getElementById('packetCount').textContent = packets.toLocaleString();
+            document.getElementById('latency').textContent = (10 + Math.random() * 10).toFixed(0) + 'ms';
+            document.getElementById('gazeAccuracy').textContent = (97 + Math.random() * 3).toFixed(1) + '%';
+            
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const hours = Math.floor(elapsed / 3600).toString().padStart(2, '0');
+            const minutes = Math.floor((elapsed % 3600) / 60).toString().padStart(2, '0');
+            const seconds = (elapsed % 60).toString().padStart(2, '0');
+            document.getElementById('uptime').textContent = `${hours}:${minutes}:${seconds}`;
+        }
+        
+        setInterval(updateStats, 1000);
+        
+        // Initial status
+        setTimeout(() => {
+            document.getElementById('systemStatus').textContent = 'ONLINE';
+            document.getElementById('systemStatus').classList.add('neon-green');
+        }, 2000);
+        
+        // Resize handler
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    </script>
+</body>
+</html>
